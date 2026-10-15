@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Git 常用命令速查表</title>
+<style>
+  :root{
+    --bg:#f4f6f9;
+    --card:#ffffff;
+    --text:#1b1f24;
+    --muted:#5c6672;
+    --line:#e3e7ec;
+    --code-bg:#f0f2f5;
+    --accent:#d1482a;
+    --accent-soft:#fdf1ed;
+    --blue:#0b6bcb;
+    --warn:#b3261e;
+    --warn-soft:#fdecea;
+    --ok:#1a7f4b;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased;
+  }
+  code,pre,.mono{
+    font-family:"JetBrains Mono","Cascadia Mono",Consolas,"SFMono-Regular",Menlo,monospace;
+    font-size:13.5px;
+  }
+
+  /* ---------- 顶栏 ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,.93);
+    backdrop-filter:saturate(180%) blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .bar{
+    max-width:1260px; margin:0 auto; padding:11px 24px;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px; font-weight:700; letter-spacing:.2px; white-space:nowrap}
+  .brand .dot{color:var(--accent); font-size:20px; line-height:1}
+  .brand small{font-weight:500; color:var(--muted); font-size:12.5px}
+  .search{flex:1 1 240px; min-width:180px; position:relative}
+  .search input{
+    width:100%; padding:9px 12px 9px 34px;
+    border:1px solid var(--line); border-radius:9px;
+    background:#fff; color:var(--text); font-size:14px; outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .search input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+  .search::before{
+    content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+    color:var(--muted); font-size:16px; pointer-events:none;
+  }
+  .tools{display:flex; gap:8px}
+  .btn{
+    border:1px solid var(--line); background:#fff; color:var(--muted);
+    border-radius:8px; padding:7px 11px; font-size:12.5px; cursor:pointer;
+    font-family:inherit; white-space:nowrap; transition:all .13s;
+  }
+  .btn:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
+  .hint{color:var(--muted); font-size:12.5px; white-space:nowrap}
+  kbd{
+    background:var(--code-bg); border:1px solid var(--line); border-bottom-width:2px;
+    border-radius:5px; padding:1px 5px; font-size:11.5px; font-family:inherit;
+  }
+
+  /* ---------- 布局 ---------- */
+  .wrap{
+    max-width:1260px; margin:0 auto; padding:26px 24px 80px;
+    display:grid; grid-template-columns:212px minmax(0,1fr); gap:32px; align-items:start;
+  }
+  nav.toc{position:sticky; top:78px; font-size:13.5px}
+  nav.toc .t{font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:10px}
+  nav.toc a{
+    display:block; padding:5px 10px; margin-bottom:2px; border-radius:7px;
+    color:var(--muted); text-decoration:none; border-left:2px solid transparent;
+  }
+  nav.toc a:hover{background:#fff; color:var(--text)}
+  nav.toc a.on{color:var(--accent); background:#fff; border-left-color:var(--accent); font-weight:600}
+
+  /* ---------- 章节 ---------- */
+  section{margin-bottom:34px; scroll-margin-top:78px}
+  h2{display:flex; align-items:center; gap:10px; font-size:19px; margin:0 0 4px; letter-spacing:.2px}
+  h2 .idx{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:8px; flex:0 0 auto;
+    background:var(--accent-soft); color:var(--accent); font-size:13px; font-weight:700;
+  }
+  .sub{color:var(--muted); font-size:13px; margin:0 0 14px 36px}
+  .sec-toggle{
+    margin-left:auto; border:1px solid var(--line); background:#fff; color:var(--muted);
+    border-radius:7px; padding:3px 9px; font-size:11.5px; cursor:pointer;
+    font-family:inherit; font-weight:400; transition:all .13s;
+  }
+  .sec-toggle:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
+
+  /* ---------- 折叠分组 ---------- */
+  .group{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    margin-bottom:10px; overflow:hidden; box-shadow:0 1px 2px rgba(16,24,40,.03);
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .group:hover{border-color:#d7dce2}
+  .group.open{box-shadow:0 3px 14px rgba(16,24,40,.07)}
+  .ghead{
+    width:100%; display:flex; align-items:center; gap:10px; text-align:left;
+    padding:11px 16px; cursor:pointer; user-select:none;
+    border:0; background:transparent; font:inherit; color:inherit;
+    transition:background .18s;
+  }
+  .ghead:hover{background:#fafbfc}
+  .ghead:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
+  .gname{
+    font-family:"JetBrains Mono","Cascadia Mono",Consolas,Menlo,monospace;
+    font-weight:600; font-size:14px; color:var(--text); letter-spacing:-.1px;
+    transition:color .2s;
+  }
+  .group.open .gname{color:var(--accent)}
+  .glabel{color:var(--muted); font-size:12.5px}
+  .gcount{
+    margin-left:auto; font-size:11.5px; color:var(--muted);
+    background:var(--code-bg); padding:1px 8px; border-radius:20px; white-space:nowrap;
+    transition:background .2s, color .2s;
+  }
+  .group.open .gcount{background:var(--accent-soft); color:var(--accent)}
+  .chev{
+    color:#98a2ad; font-size:12px; flex:0 0 auto;
+    transition:transform .38s cubic-bezier(.34,1.46,.64,1), color .2s;
+  }
+  .group.open .chev{transform:rotate(180deg); color:var(--accent)}
+
+  /* 展开 / 折叠动画：0fr → 1fr 高度过渡 + 淡入上浮 */
+  .gwrap{
+    display:grid; grid-template-rows:0fr;
+    transition:grid-template-rows .36s cubic-bezier(.32,.72,.28,1);
+  }
+  .group.open > .gwrap{grid-template-rows:1fr}
+  .gclip{overflow:hidden; min-height:0}
+  .gbody{
+    border-top:1px solid var(--line); background:#fcfdfe;
+    padding:14px 16px; display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:12px;
+    opacity:0; transform:translateY(-8px);
+    transition:opacity .24s ease, transform .32s cubic-bezier(.32,.72,.28,1);
+  }
+  .group.open > .gwrap > .gclip > .gbody{opacity:1; transform:none}
+
+  /* 组内命令行依次浮入，更有节奏 */
+  @keyframes rowIn{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+  .group.open .row{animation:rowIn .4s cubic-bezier(.32,.72,.28,1) backwards}
+  .group.open .row:nth-child(1){animation-delay:.01s}
+  .group.open .row:nth-child(2){animation-delay:.035s}
+  .group.open .row:nth-child(3){animation-delay:.06s}
+  .group.open .row:nth-child(4){animation-delay:.085s}
+  .group.open .row:nth-child(5){animation-delay:.11s}
+  .group.open .row:nth-child(6){animation-delay:.135s}
+  .group.open .row:nth-child(n+7){animation-delay:.16s}
+
+  /* ---------- 命令行 ---------- */
+  .row{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:11px 13px 12px; transition:box-shadow .15s, transform .15s;
+  }
+  .row:hover{box-shadow:0 4px 14px rgba(16,24,40,.07); transform:translateY(-1px)}
+  .row .cmd{display:flex; align-items:flex-start; gap:8px; margin-bottom:6px}
+  .row .cmd code{
+    flex:1 1 auto; min-width:0; display:block;
+    background:var(--code-bg); border-radius:7px; padding:5px 9px;
+    color:#24292f; overflow-x:auto; white-space:pre; scrollbar-width:thin;
+  }
+  .copy{
+    flex:0 0 auto; border:1px solid var(--line); background:#fff; color:var(--muted);
+    border-radius:7px; padding:5px 8px; font-size:11.5px; cursor:pointer;
+    font-family:inherit; transition:all .13s;
+  }
+  .copy:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
+  .copy.done{border-color:var(--ok); color:var(--ok); background:#eaf6ef}
+  .row p{margin:0; color:var(--muted); font-size:13.5px; line-height:1.6}
+  .row p em{color:var(--text); font-style:normal; font-weight:600}
+  .row.danger{border-color:#f2c9c4; background:#fffdfc}
+  .row.danger .cmd code{background:var(--warn-soft); color:var(--warn)}
+  .row.danger p strong{color:var(--warn)}
+  .tag{
+    display:inline-block; font-size:11px; padding:1px 6px; border-radius:5px;
+    background:var(--accent-soft); color:var(--accent); margin-left:6px; vertical-align:1px;
+    font-weight:600; letter-spacing:.02em;
+  }
+
+  /* ---------- 表格 / 提示 ---------- */
+  .table-wrap{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
+  table{width:100%; border-collapse:collapse; font-size:13.5px}
+  th,td{padding:10px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line)}
+  th{background:#fafbfc; font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); font-weight:600}
+  tr:last-child td{border-bottom:none}
+  td code{background:var(--code-bg); border-radius:5px; padding:2px 6px; white-space:nowrap; color:#24292f}
+  td:first-child{width:44%; color:var(--text)}
+  .note{
+    border:1px solid var(--line); border-left:3px solid var(--blue);
+    background:#fff; border-radius:10px; padding:12px 16px; font-size:13.5px; color:var(--muted);
+  }
+  .note strong{color:var(--text)}
+  .note.warn{border-left-color:var(--warn); background:#fffbfa}
+  .danger-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:12px}
+
+  footer{
+    max-width:1260px; margin:0 auto; padding:18px 24px 60px;
+    color:var(--muted); font-size:12.5px; border-top:1px solid var(--line);
+  }
+  .empty{display:none; padding:44px 0; text-align:center; color:var(--muted)}
+  .empty.show{display:block}
+
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr; gap:20px; padding:20px 16px 60px}
+    nav.toc{display:none}
+    .bar{padding:10px 16px}
+    .hint{display:none}
+    td:first-child{width:auto}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition-duration:.01ms!important; animation-duration:.01ms!important}
+  }
+  @media print{
+    header,nav.toc,.copy,.sec-toggle{display:none!important}
+    body{background:#fff}
+    .wrap{display:block; max-width:none; padding:0}
+    .gwrap{grid-template-rows:1fr!important; transition:none!important}
+    .gbody{
+      grid-template-columns:1fr 1fr; background:#fff;
+      opacity:1!important; transform:none!important; animation:none!important;
+    }
+    .group.open .row, .row{animation:none!important; opacity:1!important; transform:none!important}
+    .group,.row{break-inside:avoid; box-shadow:none}
+    section{break-inside:avoid-page}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand"><span class="dot">◆</span> Git 常用命令速查 <small>Cheatsheet · 2026</small></div>
+    <div class="search">
+      <input id="q" type="search" placeholder="搜索命令或说明，如 commit / 撤销 / 回退" autocomplete="off">
+    </div>
+    <div class="tools">
+      <button class="btn" id="expandAll">展开全部</button>
+      <button class="btn" id="collapseAll">折叠全部</button>
+    </div>
+    <div class="hint">点分组标题展开 · <kbd>/</kbd> 搜索 · <kbd>Esc</kbd> 清空</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="toc">
+    <div class="t">目录</div>
+    <a href="#s1">01 配置与初始化</a>
+    <a href="#s2">02 创建与克隆</a>
+    <a href="#s3">03 提交流程</a>
+    <a href="#s4">04 分支与合并</a>
+    <a href="#s5">05 远程仓库</a>
+    <a href="#s6">06 撤销与回退</a>
+    <a href="#s7">07 查看历史</a>
+    <a href="#s8">08 临时存放 stash</a>
+    <a href="#s9">09 标签</a>
+    <a href="#s10">10 忽略与清理</a>
+    <a href="#s11">11 场景速查</a>
+    <a href="#s12">12 危险命令</a>
+  </nav>
+
+  <main id="main">
+
+  <!-- ================= 01 ================= -->
+  <section id="s1">
+    <h2><span class="idx">01</span>配置与初始化</h2>
+    <p class="sub">装完 Git 第一件事：留下你的身份信息，否则无法提交。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git config</span><span class="glabel">配置项管理</span><span class="gcount">7 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git config --global user.name "你的名字"</code><button class="copy">复制</button></div><p>设置全局用户名，会写进每条提交记录。</p></div>
+        <div class="row"><div class="cmd"><code>git config --global user.email "you@example.com"</code><button class="copy">复制</button></div><p>设置全局邮箱，建议与代码托管平台账号一致。</p></div>
+        <div class="row"><div class="cmd"><code>git config --global init.defaultBranch main</code><button class="copy">复制</button></div><p>新仓库默认分支名改为 <em>main</em>，避免老式的 master。</p></div>
+        <div class="row"><div class="cmd"><code>git config --list</code><button class="copy">复制</button></div><p>查看当前所有生效的配置项（含来源文件）。</p></div>
+        <div class="row"><div class="cmd"><code>git config --global --edit</code><button class="copy">复制</button></div><p>用默认编辑器直接编辑全局配置文件。</p></div>
+        <div class="row"><div class="cmd"><code>git config --global core.editor "code --wait"</code><button class="copy">复制</button></div><p>把默认编辑器换成 VS Code（写多行提交信息时很有用）。</p></div>
+        <div class="row"><div class="cmd"><code>git config --global alias.st status</code><button class="copy">复制</button></div><p>设置别名，之后 <code>git st</code> 等同 <code>git status</code>。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git help</span><span class="glabel">查阅手册</span><span class="gcount">1 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git help commit</code><button class="copy">复制</button></div><p>查看某条命令的完整手册；加 <code>-w</code> 可在浏览器打开。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 02 ================= -->
+  <section id="s2">
+    <h2><span class="idx">02</span>创建与克隆</h2>
+    <p class="sub">从零开始一个仓库，或把别人的仓库拉下来。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git init</span><span class="glabel">初始化本地仓库</span><span class="gcount">1 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git init</code><button class="copy">复制</button></div><p>在当前目录初始化一个空仓库，生成隐藏的 <em>.git</em> 目录。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git clone</span><span class="glabel">克隆远程仓库</span><span class="gcount">4 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git clone &lt;url&gt;</code><button class="copy">复制</button></div><p>克隆远程仓库到同名文件夹，并自动配置好 origin。</p></div>
+        <div class="row"><div class="cmd"><code>git clone &lt;url&gt; my-dir</code><button class="copy">复制</button></div><p>克隆到指定目录名。</p></div>
+        <div class="row"><div class="cmd"><code>git clone --depth 1 &lt;url&gt;</code><button class="copy">复制</button></div><p>浅克隆，只取最近一次提交，体积小、速度快。</p></div>
+        <div class="row"><div class="cmd"><code>git clone -b dev &lt;url&gt;</code><button class="copy">复制</button></div><p>克隆后直接切换到 <em>dev</em> 分支。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 03 ================= -->
+  <section id="s3">
+    <h2><span class="idx">03</span>提交流程（改 → 加 → 提交）</h2>
+    <p class="sub">日常使用频率最高的一组命令，占掉你 80% 的操作。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git status</span><span class="glabel">查看当前状态</span><span class="gcount">2 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git status</code><button class="copy">复制</button></div><p>看哪些文件改了、哪些已暂存、当前在哪个分支。<em>动手前先跑它。</em></p></div>
+        <div class="row"><div class="cmd"><code>git status -s</code><button class="copy">复制</button></div><p>精简输出：<code>M</code> 已修改、<code>A</code> 新增、<code>??</code> 未跟踪。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git add</span><span class="glabel">加入暂存区</span><span class="gcount">4 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git add &lt;file&gt;</code><button class="copy">复制</button></div><p>把指定文件加入暂存区。</p></div>
+        <div class="row"><div class="cmd"><code>git add .</code><button class="copy">复制</button></div><p>暂存当前目录下所有变更（不含被 .gitignore 忽略的文件）。</p></div>
+        <div class="row"><div class="cmd"><code>git add -A</code><button class="copy">复制</button></div><p>暂存整个仓库的全部变更，包括新增与删除。</p></div>
+        <div class="row"><div class="cmd"><code>git add -p</code><button class="copy">复制</button></div><p>交互式逐块选择要暂存的内容，可以把一次大改拆成多个提交。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git commit</span><span class="glabel">提交一个版本</span><span class="gcount">3 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git commit -m "feat: 描述"</code><button class="copy">复制</button></div><p>把暂存区内容提交为一个版本。</p></div>
+        <div class="row"><div class="cmd"><code>git commit -am "描述"</code><button class="copy">复制</button></div><p>跳过 add，直接提交<em>已跟踪</em>文件的修改（新文件无效）。</p></div>
+        <div class="row"><div class="cmd"><code>git commit --amend</code><button class="copy">复制</button></div><p>修改上一条提交的信息，或把漏掉的文件补进去。<span class="tag">仅限未推送</span></p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git diff</span><span class="glabel">比较改动差异</span><span class="gcount">3 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git diff</code><button class="copy">复制</button></div><p>查看<em>工作区</em>与暂存区的差异 —— 还没 add 的改动。</p></div>
+        <div class="row"><div class="cmd"><code>git diff --staged</code><button class="copy">复制</button></div><p>查看<em>暂存区</em>与上次提交的差异 —— 即将被提交的内容。</p></div>
+        <div class="row"><div class="cmd"><code>git diff HEAD~1</code><button class="copy">复制</button></div><p>与上一条提交整体比较，看看这一轮到底改了什么。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 04 ================= -->
+  <section id="s4">
+    <h2><span class="idx">04</span>分支与合并</h2>
+    <p class="sub">Git 的核心能力。新命令用 <code>switch</code>，老教程里的 <code>checkout</code> 仍然可用。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git branch</span><span class="glabel">分支管理</span><span class="gcount">4 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git branch</code><button class="copy">复制</button></div><p>列出本地分支，当前分支前有 <code>*</code>。</p></div>
+        <div class="row"><div class="cmd"><code>git branch -a</code><button class="copy">复制</button></div><p>列出本地 + 远程全部分支。</p></div>
+        <div class="row"><div class="cmd"><code>git branch -d feature/login</code><button class="copy">复制</button></div><p>删除已合并的分支；未合并需用 <code>-D</code> 强删。</p></div>
+        <div class="row"><div class="cmd"><code>git branch -m old new</code><button class="copy">复制</button></div><p>重命名分支。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git switch / checkout</span><span class="glabel">切换分支</span><span class="gcount">4 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git switch -c feature/login</code><button class="copy">复制</button></div><p>新建分支并立刻切过去（等价 <code>checkout -b</code>）。</p></div>
+        <div class="row"><div class="cmd"><code>git switch main</code><button class="copy">复制</button></div><p>切换到已有分支。</p></div>
+        <div class="row"><div class="cmd"><code>git switch -</code><button class="copy">复制</button></div><p>快速切回上一个分支，两个分支间来回横跳。</p></div>
+        <div class="row"><div class="cmd"><code>git checkout &lt;branch&gt;</code><button class="copy">复制</button></div><p>老写法，切分支仍然可用；新版 Git 推荐 <code>switch</code>。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git merge</span><span class="glabel">合并分支</span><span class="gcount">3 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git merge feature/login</code><button class="copy">复制</button></div><p>把目标分支合并进当前分支。</p></div>
+        <div class="row"><div class="cmd"><code>git merge --no-ff dev</code><button class="copy">复制</button></div><p>强制生成合并提交，保留分支结构，历史更清晰。</p></div>
+        <div class="row"><div class="cmd"><code>git merge --abort</code><button class="copy">复制</button></div><p>合并冲突时放弃合并，回到动手前的状态。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git rebase</span><span class="glabel">变基整理历史</span><span class="gcount">3 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git rebase main</code><button class="copy">复制</button></div><p>把当前分支的提交“搬到” main 之后，得到一条直线历史。</p></div>
+        <div class="row"><div class="cmd"><code>git rebase -i HEAD~3</code><button class="copy">复制</button></div><p>交互式整理最近 3 条提交：合并、改信息、调顺序。<span class="tag">慎用于已推送</span></p></div>
+        <div class="row"><div class="cmd"><code>git rebase --continue</code><button class="copy">复制</button></div><p>解决冲突并 <code>git add</code> 之后，继续变基；<code>--abort</code> 则放弃。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git cherry-pick</span><span class="glabel">摘取单条提交</span><span class="gcount">1 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git cherry-pick &lt;commit-hash&gt;</code><button class="copy">复制</button></div><p>把别的分支上的某一条提交单独摘到当前分支。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 05 ================= -->
+  <section id="s5">
+    <h2><span class="idx">05</span>远程仓库</h2>
+    <p class="sub">拉取与推送。团队协作中最容易出问题的地方，先 <code>pull</code> 再 <code>push</code>。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git remote</span><span class="glabel">远程地址管理</span><span class="gcount">3 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git remote -v</code><button class="copy">复制</button></div><p>查看已配置的远程地址。</p></div>
+        <div class="row"><div class="cmd"><code>git remote add origin &lt;url&gt;</code><button class="copy">复制</button></div><p>给本地仓库关联远程仓库。</p></div>
+        <div class="row"><div class="cmd"><code>git remote set-url origin &lt;url&gt;</code><button class="copy">复制</button></div><p>修改远程地址（换域名、换协议常用）。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git fetch</span><span class="glabel">只下载不合并</span><span class="gcount">2 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git fetch</code><button class="copy">复制</button></div><p>只下载远程更新，<em>不改动</em>你本地的工作区，最安全的同步方式。</p></div>
+        <div class="row"><div class="cmd"><code>git fetch --prune</code><button class="copy">复制</button></div><p>顺便清理远程已删除的分支引用。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git pull</span><span class="glabel">拉取并合并</span><span class="gcount">2 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git pull</code><button class="copy">复制</button></div><p>等于 fetch + merge，把远程更新合并进当前分支。</p></div>
+        <div class="row"><div class="cmd"><code>git pull --rebase</code><button class="copy">复制</button></div><p>用变基代替合并拉取，历史是一条直线，团队常用。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git push</span><span class="glabel">推送到远程</span><span class="gcount">4 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git push</code><button class="copy">复制</button></div><p>推送当前分支到已绑定的上游分支。</p></div>
+        <div class="row"><div class="cmd"><code>git push -u origin main</code><button class="copy">复制</button></div><p>首次推送并绑定上游分支，之后直接 <code>git push</code> 即可。</p></div>
+        <div class="row"><div class="cmd"><code>git push origin --delete dev</code><button class="copy">复制</button></div><p>删除远程分支。</p></div>
+        <div class="row"><div class="cmd"><code>git push --force-with-lease</code><button class="copy">复制</button></div><p>变基后覆盖远程分支的安全写法：远程有新提交时会拒绝。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 06 ================= -->
+  <section id="s6">
+    <h2><span class="idx">06</span>撤销与回退</h2>
+    <p class="sub">按“改动丢没丢”来选：先想清楚，再敲回车。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git restore</span><span class="glabel">撤销工作区改动</span><span class="gcount">2 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git restore &lt;file&gt;</code><button class="copy">复制</button></div><p>丢弃工作区里某文件的改动，恢复到上次提交的样子。<span class="tag">改动丢失</span></p></div>
+        <div class="row"><div class="cmd"><code>git restore --staged &lt;file&gt;</code><button class="copy">复制</button></div><p>把文件从暂存区撤下，<em>保留</em>工作区改动。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git reset</span><span class="glabel">撤销提交</span><span class="gcount">4 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git reset --soft HEAD~1</code><button class="copy">复制</button></div><p>撤销最后一次提交，改动全部回到暂存区。<em>最安全的“后悔药”。</em></p></div>
+        <div class="row"><div class="cmd"><code>git reset HEAD~1</code><button class="copy">复制</button></div><p>撤销提交并把改动退回工作区（默认 mixed）。</p></div>
+        <div class="row"><div class="cmd"><code>git reset HEAD &lt;file&gt;</code><button class="copy">复制</button></div><p>只把文件从暂存区撤下，提交历史不动。</p></div>
+        <div class="row danger"><div class="cmd"><code>git reset --hard HEAD~1</code><button class="copy">复制</button></div><p><strong>丢弃</strong>最后一次提交及其全部改动，无法从工作区找回（可用 reflog 挽救）。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git revert</span><span class="glabel">反向提交</span><span class="gcount">1 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git revert &lt;commit-hash&gt;</code><button class="copy">复制</button></div><p>生成一条<em>反向提交</em>来抵消某次改动，适合已推送的提交，不动历史。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git clean</span><span class="glabel">删除未跟踪文件</span><span class="gcount">2 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git clean -n</code><button class="copy">复制</button></div><p>预览将被删除的未跟踪文件，先看再删，强烈建议养成习惯。</p></div>
+        <div class="row danger"><div class="cmd"><code>git clean -fd</code><button class="copy">复制</button></div><p><strong>删除</strong>所有未跟踪的文件和目录（新建但没提交的东西会没）。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 07 ================= -->
+  <section id="s7">
+    <h2><span class="idx">07</span>查看历史与排查</h2>
+    <p class="sub">出问题时最该先用的命令：<code>git log</code> 和 <code>git reflog</code>。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git log</span><span class="glabel">查看提交历史</span><span class="gcount">6 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git log --oneline --graph --all --decorate</code><button class="copy">复制</button></div><p>一条“万能日志”，图形化展示所有分支走向。<em>建议设为别名。</em></p></div>
+        <div class="row"><div class="cmd"><code>git log -p -2</code><button class="copy">复制</button></div><p>查看最近 2 条提交的完整改动内容。</p></div>
+        <div class="row"><div class="cmd"><code>git log --stat</code><button class="copy">复制</button></div><p>每条提交附带改动文件与行数统计。</p></div>
+        <div class="row"><div class="cmd"><code>git log --author="chris"</code><button class="copy">复制</button></div><p>按作者筛选提交。</p></div>
+        <div class="row"><div class="cmd"><code>git log -S "关键字"</code><button class="copy">复制</button></div><p>找出<em>哪次提交引入或删除了</em>某段代码，排查 bug 神器。</p></div>
+        <div class="row"><div class="cmd"><code>git log --since="2 weeks ago"</code><button class="copy">复制</button></div><p>按时间范围过滤提交。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git diff</span><span class="glabel">跨分支 / 跨提交对比</span><span class="gcount">3 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git diff main..dev --stat</code><button class="copy">复制</button></div><p>对比两个分支的差异概览。</p></div>
+        <div class="row"><div class="cmd"><code>git diff &lt;hash-a&gt; &lt;hash-b&gt;</code><button class="copy">复制</button></div><p>对比任意两次提交之间的差异。</p></div>
+        <div class="row"><div class="cmd"><code>git diff dev -- src/</code><button class="copy">复制</button></div><p>只查看某分支中指定目录的变化。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git show / blame</span><span class="glabel">定位到具体改动</span><span class="gcount">2 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git show &lt;commit-hash&gt;</code><button class="copy">复制</button></div><p>查看某次提交的详细信息与改动。</p></div>
+        <div class="row"><div class="cmd"><code>git blame &lt;file&gt;</code><button class="copy">复制</button></div><p>逐行显示谁、在哪次提交改的这行代码。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git reflog</span><span class="glabel">救命命令</span><span class="gcount">1 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git reflog</code><button class="copy">复制</button></div><p><em>记录 HEAD 的每一次移动。</em>误删分支、reset 错版本都能从这里找回。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git shortlog</span><span class="glabel">贡献统计</span><span class="gcount">1 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git shortlog -sn</code><button class="copy">复制</button></div><p>按提交数统计贡献者排名。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git fsck</span><span class="glabel">找回悬空对象</span><span class="gcount">1 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git fsck --lost-found</code><button class="copy">复制</button></div><p>极端情况下找回悬空（dangling）提交对象。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 08 ================= -->
+  <section id="s8">
+    <h2><span class="idx">08</span>临时存放 stash</h2>
+    <p class="sub">活干到一半要切分支，又不想提交 —— 先塞进抽屉。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git stash</span><span class="glabel">保存 / 查看 / 恢复</span><span class="gcount">7 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git stash</code><button class="copy">复制</button></div><p>把当前未提交的改动存起来，工作区变干净。</p></div>
+        <div class="row"><div class="cmd"><code>git stash -u</code><button class="copy">复制</button></div><p>连同未跟踪的新文件一起存（默认不含）。</p></div>
+        <div class="row"><div class="cmd"><code>git stash list</code><button class="copy">复制</button></div><p>查看所有 stash 记录。</p></div>
+        <div class="row"><div class="cmd"><code>git stash pop</code><button class="copy">复制</button></div><p>取出最近一次 stash 并<em>从列表删除</em>。</p></div>
+        <div class="row"><div class="cmd"><code>git stash apply stash@{1}</code><button class="copy">复制</button></div><p>取出指定 stash 但在列表中<em>保留</em>副本。</p></div>
+        <div class="row"><div class="cmd"><code>git stash show -p</code><button class="copy">复制</button></div><p>查看 stash 里具体改了什么。</p></div>
+        <div class="row"><div class="cmd"><code>git stash drop</code><button class="copy">复制</button></div><p>丢弃最近一次 stash；<code>git stash clear</code> 清空全部。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 09 ================= -->
+  <section id="s9">
+    <h2><span class="idx">09</span>标签</h2>
+    <p class="sub">给发布点打上标记，比如 v1.0.0。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git tag</span><span class="glabel">版本标记</span><span class="gcount">5 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git tag</code><button class="copy">复制</button></div><p>列出所有标签。</p></div>
+        <div class="row"><div class="cmd"><code>git tag -a v1.0.0 -m "首个正式版"</code><button class="copy">复制</button></div><p>创建一个带说明的附注标签（推荐）。</p></div>
+        <div class="row"><div class="cmd"><code>git push origin v1.0.0</code><button class="copy">复制</button></div><p>推送单个标签到远程；<code>--tags</code> 推送全部。</p></div>
+        <div class="row"><div class="cmd"><code>git tag -d v1.0.0</code><button class="copy">复制</button></div><p>删除本地标签；删远程需 <code>git push origin --delete v1.0.0</code>。</p></div>
+        <div class="row"><div class="cmd"><code>git switch --detach v1.0.0</code><button class="copy">复制</button></div><p>临时检出到某个标签版本查看代码。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 10 ================= -->
+  <section id="s10">
+    <h2><span class="idx">10</span>忽略与清理文件</h2>
+    <p class="sub">不想被 Git 跟踪的东西，交给 <code>.gitignore</code>。</p>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git rm / .gitignore</span><span class="glabel">停止跟踪与忽略</span><span class="gcount">3 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git rm --cached &lt;file&gt;</code><button class="copy">复制</button></div><p>让文件停止被跟踪，但<em>保留在磁盘上</em>（配合 .gitignore 使用）。</p></div>
+        <div class="row"><div class="cmd"><code>git rm -r --cached .</code><button class="copy">复制</button></div><p>清空索引后重新 <code>git add .</code>，用于让新写的 .gitignore 整体生效。</p></div>
+        <div class="row"><div class="cmd"><code>git check-ignore -v &lt;file&gt;</code><button class="copy">复制</button></div><p>查文件为什么被忽略 —— 是哪条规则命中了它。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git update-index</span><span class="glabel">临时忽略修改</span><span class="gcount">1 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git update-index --assume-unchanged &lt;file&gt;</code><button class="copy">复制</button></div><p>临时忽略对某已跟踪文件的本地修改（如本地配置文件）。</p></div>
+      </div>
+    </div></div></div>
+
+    <div class="group">
+      <button type="button" class="ghead" aria-expanded="false"><span class="gname">git gc</span><span class="glabel">仓库压缩</span><span class="gcount">1 条</span><span class="chev">▼</span></button><div class="gwrap"><div class="gclip">
+      <div class="gbody">
+        <div class="row"><div class="cmd"><code>git gc --prune=now</code><button class="copy">复制</button></div><p>压缩仓库、清理无引用的对象，仓库臃肿时用。</p></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <!-- ================= 11 ================= -->
+  <section id="s11">
+    <h2><span class="idx">11</span>场景速查：我想……</h2>
+    <p class="sub">遇到具体问题，直接对着这张表抄。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>我想要</th><th>命令</th></tr></thead>
+        <tbody>
+          <tr><td>改上一条提交的说明文字</td><td><code>git commit --amend</code></td></tr>
+          <tr><td>撤销提交，但改动全部保留</td><td><code>git reset --soft HEAD~1</code></td></tr>
+          <tr><td>撤销某一文件里还没 add 的改动</td><td><code>git restore &lt;file&gt;</code></td></tr>
+          <tr><td>撤销一次<em>已经推送</em>的提交</td><td><code>git revert &lt;hash&gt;</code></td></tr>
+          <tr><td>误删了分支，想找回来</td><td><code>git reflog</code> → <code>git switch -c &lt;分支&gt; &lt;hash&gt;</code></td></tr>
+          <tr><td>reset --hard 之后发现手滑了</td><td><code>git reflog</code> → <code>git reset --hard HEAD@{2}</code></td></tr>
+          <tr><td>把别的分支上单独一条提交搬过来</td><td><code>git cherry-pick &lt;hash&gt;</code></td></tr>
+          <tr><td>提交写错分支了</td><td><code>git reset --soft HEAD~1</code> → 切分支 → 重新 commit</td></tr>
+          <tr><td>想看某行代码是谁写的</td><td><code>git blame &lt;file&gt;</code></td></tr>
+          <tr><td>找出某段代码是哪次提交引入的</td><td><code>git log -S "关键字"</code></td></tr>
+          <tr><td>干活干一半要紧急切分支</td><td><code>git stash -u</code> → 切分支 → <code>git stash pop</code></td></tr>
+          <tr><td>本地分支比远程落后，想同步</td><td><code>git fetch</code> → <code>git rebase origin/main</code></td></tr>
+          <tr><td>推送被拒绝（远程有新提交）</td><td><code>git pull --rebase</code> → 解决冲突 → <code>git push</code></td></tr>
+          <tr><td>想把整个仓库退回某个旧版本</td><td><code>git reset --hard &lt;hash&gt;</code>（慎用）或 <code>git revert</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= 12 ================= -->
+  <section id="s12">
+    <h2><span class="idx">12</span>危险命令与铁律</h2>
+    <p class="sub">这几条动手前请多看一眼屏幕。</p>
+    <div class="danger-grid">
+      <div class="row danger"><div class="cmd"><code>git reset --hard</code><button class="copy">复制</button></div><p>永久丢弃未提交改动。执行前请确认 <code>git status</code> 干净。</p></div>
+      <div class="row danger"><div class="cmd"><code>git clean -fdx</code><button class="copy">复制</button></div><p>连 .gitignore 忽略的文件一起删（比如 .env、本地数据库）。</p></div>
+      <div class="row danger"><div class="cmd"><code>git push --force</code><button class="copy">复制</button></div><p>会覆盖远程历史，可能抹掉同事的提交。用 <code>--force-with-lease</code> 替代。</p></div>
+      <div class="row danger"><div class="cmd"><code>git rebase / commit --amend</code><button class="copy">复制</button></div><p>对<em>已推送到共享分支</em>的提交使用，会让别人的历史对不上号。</p></div>
+    </div>
+    <div class="note warn" style="margin-top:14px">
+      <strong>三条铁律：</strong>① 动手前先 <code>git status</code>；② 破坏性操作前先 <code>git stash</code> 或建个临时分支；③ 共享分支上<em>只做新增，不改写历史</em>。真出事了，<code>git reflog</code> 通常还能救你。
+    </div>
+    <div class="note" style="margin-top:12px">
+      <strong>提交信息建议：</strong>用 <code>feat:</code> <code>fix:</code> <code>docs:</code> <code>refactor:</code> <code>chore:</code> 开头，一句话说清“做了什么”。历史读得懂，回滚才敢下手。
+    </div>
+  </section>
+
+  <div class="empty" id="empty">没有匹配的命令，换个关键词试试。</div>
+
+  </main>
+</div>
+
+<footer>
+  Git 常用命令速查表 · 12 个大类 / 32 个命令分组 / 95 条命令与场景 · 分组默认收起，点击标题展开；单文件离线可用，打印时自动展开全部分组。
+</footer>
+
+<script>
+(function(){
+  var q        = document.getElementById('q');
+  var empty    = document.getElementById('empty');
+  var groups   = Array.prototype.slice.call(document.querySelectorAll('.group'));
+  var rows     = Array.prototype.slice.call(document.querySelectorAll('.row'));
+  var trs      = Array.prototype.slice.call(document.querySelectorAll('tbody tr'));
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section'));
+  var searching = false;
+
+  // 统一的开关入口：维护 .open 类、aria 状态与用户偏好
+  function setOpen(g, on, byUser){
+    g.classList.toggle('open', on);
+    var head = g.querySelector('.ghead');
+    if(head) head.setAttribute('aria-expanded', on ? 'true' : 'false');
+    if(byUser && !searching) g.dataset.userOpen = on ? '1' : '0';
+  }
+
+  // 默认全部收起，点击标题平滑展开
+  groups.forEach(function(g){
+    g.dataset.userOpen = '0';
+    var head = g.querySelector('.ghead');
+    head.addEventListener('click', function(){
+      setOpen(g, !g.classList.contains('open'), true);
+    });
+  });
+
+  function filter(){
+    var k = q.value.trim().toLowerCase();
+    searching = !!k;
+
+    if(!k){
+      rows.forEach(function(el){ el.style.display=''; });
+      trs.forEach(function(el){ el.style.display=''; });
+      sections.forEach(function(s){ s.style.display=''; });
+      groups.forEach(function(g){
+        g.style.display='';
+        setOpen(g, g.dataset.userOpen === '1', false);
+      });
+      empty.classList.remove('show');
+      return;
+    }
+
+    rows.forEach(function(el){
+      el.style.display = el.textContent.toLowerCase().indexOf(k) > -1 ? '' : 'none';
+    });
+    trs.forEach(function(el){
+      el.style.display = el.textContent.toLowerCase().indexOf(k) > -1 ? '' : 'none';
+    });
+
+    var any = false;
+    groups.forEach(function(g){
+      var hit = g.querySelectorAll('.row:not([style*="none"])').length > 0;
+      g.style.display = hit ? '' : 'none';
+      if(hit){ setOpen(g, true, false); any = true; }   // 命中时自动展开该分组
+    });
+
+    sections.forEach(function(s){
+      var vis = s.querySelectorAll('.row:not([style*="none"]), tbody tr:not([style*="none"])');
+      s.style.display = vis.length > 0 ? '' : 'none';
+    });
+
+    empty.classList.toggle('show', !any);
+  }
+
+  q.addEventListener('input', filter);
+  document.addEventListener('keydown', function(e){
+    if(e.key === '/' && document.activeElement !== q){ e.preventDefault(); q.focus(); }
+    if(e.key === 'Escape'){ q.value=''; filter(); q.blur(); }
+  });
+
+  document.getElementById('expandAll').addEventListener('click', function(){
+    groups.forEach(function(g){ if(g.style.display !== 'none') setOpen(g, true, true); });
+  });
+  document.getElementById('collapseAll').addEventListener('click', function(){
+    groups.forEach(function(g){ if(g.style.display !== 'none') setOpen(g, false, true); });
+  });
+
+  // 每个章节标题右侧自动加一个「展开本节」按钮
+  sections.forEach(function(s){
+    var gs = Array.prototype.slice.call(s.querySelectorAll('.group'));
+    if(!gs.length) return;
+    var h2 = s.querySelector('h2');
+    var btn = document.createElement('button');
+    btn.className = 'sec-toggle';
+    btn.textContent = '展开本节';
+    h2.appendChild(btn);
+    btn.addEventListener('click', function(ev){
+      ev.preventDefault();
+      var anyClosed = gs.some(function(g){ return !g.classList.contains('open'); });
+      gs.forEach(function(g){ setOpen(g, anyClosed, true); });
+      btn.textContent = anyClosed ? '收起本节' : '展开本节';
+    });
+  });
+
+  // 一键复制
+  function fallback(text, cb){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); cb(); }catch(err){}
+    document.body.removeChild(ta);
+  }
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.copy');
+    if(!btn) return;
+    var text = btn.parentElement.querySelector('code').textContent.trim();
+    var done = function(){
+      btn.textContent = '已复制';
+      btn.classList.add('done');
+      setTimeout(function(){ btn.textContent = '复制'; btn.classList.remove('done'); }, 1200);
+    };
+    if(navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(text, done); });
+    } else { fallback(text, done); }
+  });
+
+  // 打印前自动展开全部
+  window.addEventListener('beforeprint', function(){
+    groups.forEach(function(g){ setOpen(g, true, false); });
+  });
+
+  // 目录随滚动高亮
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){
+        links.forEach(function(a){ a.classList.toggle('on', a.getAttribute('href') === '#' + en.target.id); });
+      }
+    });
+  }, {rootMargin:'-70px 0px -70% 0px', threshold:0});
+  sections.forEach(function(s){ obs.observe(s); });
+})();
+</script>
+</body>
+</html>
